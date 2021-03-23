@@ -38,7 +38,10 @@ class DeblurNet(Module):
 
   
   def forward(self, x):
-    inputi = x
+    # for our case the reference image will be the last image in the input
+    # and the first 4 images will be the first 4 prior frames to the frame
+    # we are deblurring.
+    ref = torch.narrow(x,2,12,3)
     # F0
     F0_out = self.F0(x)
     F0_out = self.batchnorm64(F0_out)
@@ -125,6 +128,6 @@ class DeblurNet(Module):
     F14_out = self.relu(F14_out)
     # F15
     F15_out = self.F15(F14_out)
-    F15_out = self.batchnorm3(F15_out) + inputi # Skip Connection 4
+    F15_out = self.batchnorm3(F15_out) + ref # Skip Connection 4
     F15_out = self.sigmoid(F15_out)
     return F15_out
