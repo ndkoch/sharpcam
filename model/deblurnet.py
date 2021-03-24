@@ -23,8 +23,8 @@ class DeblurNet(Module):
     self.F11 = Conv2d(256,256,3,1,1)
     self.U2  = ConvTranspose2d(256,128,4,2,1)
     self.F12 = Conv2d(128,128,3,1,1)
-    self.F13 = Conv2d(128,128,3,1,1)
-    self.U3  = ConvTranspose2d(128,64,4,2,1)
+    self.F13 = Conv2d(128,64,3,1,1)
+    self.U3  = ConvTranspose2d(64,64,4,2,1)
     self.F14 = Conv2d(64,15,3,1,1)
     self.F15 = Conv2d(15,3,3,1,1)
     self.batchnorm3 = BatchNorm2d(3,1e-3)
@@ -41,7 +41,7 @@ class DeblurNet(Module):
     # for our case the reference image will be the last image in the input
     # and the first 4 images will be the first 4 prior frames to the frame
     # we are deblurring.
-    ref = torch.narrow(x,2,12,3)
+    ref = torch.narrow(x,1,12,3)
     # F0
     F0_out = self.F0(x)
     F0_out = self.batchnorm64(F0_out)
@@ -74,6 +74,7 @@ class DeblurNet(Module):
     F5_out = self.F5(F4_out)
     F5_out = self.batchnorm256(F5_out)
     F5_out = self.relu(F5_out)
+    # print(F5_out.size())
     # D3
     D3_out = self.D3(F5_out)
     D3_out = self.batchnorm512(D3_out)
@@ -92,6 +93,7 @@ class DeblurNet(Module):
     F8_out = self.relu(F8_out)
     # U1
     U1_out = self.U1(F8_out)
+    # print(U1_out.size())
     U1_out = self.batchnorm256(U1_out) + F5_out # Skip Connection 1
     U1_out = self.relu(U1_out)
     # F9
@@ -111,7 +113,7 @@ class DeblurNet(Module):
     U2_out = self.batchnorm128(U2_out) + F2_out # Skip Connection 2
     U2_out = self.relu(U2_out)
     # F12
-    F12_out = self.F10(U2_out)
+    F12_out = self.F12(U2_out)
     F12_out = self.batchnorm128(F12_out)
     F12_out = self.relu(F12_out)
     # F13
@@ -131,3 +133,11 @@ class DeblurNet(Module):
     F15_out = self.batchnorm3(F15_out) + ref # Skip Connection 4
     F15_out = self.sigmoid(F15_out)
     return F15_out
+
+# if __name__ == "__main__":
+#   input_height = 720 #720
+#   input_width = 1280 #1280
+#   net = DeblurNet()
+#   x = torch.randn(1,15, input_height, input_width)
+#   y = net(x)
+#   print(y)
