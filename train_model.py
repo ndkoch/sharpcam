@@ -4,7 +4,8 @@ import random
 import numpy as np
 import argparse
 from model.deblurnet import DeblurNet
-from torchvision import datasets, transforms
+from data import FramePacket
+from torchvision import transforms
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -26,6 +27,7 @@ def train(args):
   ##############################################################
   # define training parameters
   maxIters = args.max_iters
+  batch_size = args.batch_size
   decayRate = 0.5
   decayEvery = 8000
   decayStart = 24000
@@ -48,15 +50,23 @@ def train(args):
       # now update optimizer
       for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-    loadRandomBatch(trainDirs)
+    batchFrames = loadRandomBatch(trainDirs, 5)
+    frameLoader = torch.utils.data.DataLoader(batchFrames, batch_size=batch_size)
+    for idx, (trainPacket, gtImg) in enumerate(frameLoader):
+      print(trainPacket.shape)
+      print(gtImg.shape)
     it += 1
 
-def loadRandomBatch(dirs):
+def loadRandomBatch(dirs, packet_size):
   transform = transforms.Compose([transforms.ToTensor()])
   randDir = random.choice(dirs)
   trainDir = os.path.join(randDir,"input")
   gtDir = os.path.join(randDir,"GT")
-  # trainingFrames = datasets.ImageFolder(randDir, transform=transform)
+  # trainingFrames = FramePacket(trainDir, transform, packet_size)
+  # gtFrames = FramePacket(gtDir, transform, packet_size)
+  # return trainingFrames, gtFrames
+  packet = FramePacket(trainDir, gtDir, transform, packet_size)
+  return packet
   
 
 # helper borrowed from
