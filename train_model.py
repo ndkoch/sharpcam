@@ -13,7 +13,6 @@ def main():
   args = parseArgs()
   print("Loading Model...\n")
   model = loadModel(args)
-
   max_iters = args.max_iters
   batch_size = args.batch_size
   use_cuda = args.use_cuda
@@ -25,6 +24,7 @@ def main():
   log_every = args.average_loss_every
   trainset_dir = args.trainset_dir
   validset_dir = args.validset_dir
+  output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.output_dir)
   validate_every = args.validate_every
   print("batch size:            %d" % batch_size)
   print("max iterations:        %d" % max_iters)
@@ -82,6 +82,10 @@ def main():
     toc = tic
     tic = time.time()
     it += 1
+  if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+  output_dir = os.path.join(output_dir, "deblurnet_state_dict.pt")
+  torch.save(model.state_dict(),output_dir)
 
 def parseArgs():
   parser = argparse.ArgumentParser()
