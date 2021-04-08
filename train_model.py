@@ -9,9 +9,82 @@ from torchvision import transforms
 import sys
 import time
 
+def main():
+  args = parseArgs()
+  print("Loading Model...\n")
+  model = loadModel(args)
+
+  max_iters = args.max_iters
+  batch_size = args.batch_size
+  use_cuda = args.use_cuda
+  decayRate = 0.5
+  decayEvery = max_iters / 10
+  decayStart = decayEvery * 3
+  lrMin = 10e-6
+  lr = 0.005
+  log_every = args.average_loss_every
+  trainset_dir = args.trainset_dir
+  validset_dir = args.validset_dir
+  validate_every = args.validate_every
+  print("batch size:            %d" % batch_size)
+  print("max iterations:        %d" % max_iters)
+  print("use cuda:              %s" % use_cuda)
+  print("learning rate start:   %f" % lr)
+  print("learning rate minimum: %f\n" % lrMin)
+
+  optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+  criterion = torch.nn.MSELoss()
+  it = 1
+  avg_train_speed = None
+  total_train_loss = 0
+  total_valid_loss = 0
+  avg_train_loss = 0
+  tic = time.time()
+  print("Begin Training...\n")
+  while it <= max_iters:
+    # check to see if the learning rate needs to be updated
+    if it >= decayStart and ((it - decayStart) % decayEvery == 0):
+      lr = lr * decayRate
+      if lr < lrMin:
+        lr = lrMin
+      for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+    
+    training_loss = train(model, criterion, optimizer, batch_size, use_cuda, trainset_dir)
+
+    toc = time.time()
+    train_speed = 1/(toc-tic) # iterations per second
+    avg_train_speed = avg_train_speed or train_speed
+    avg_train_speed = 0.1 * train_speed + 0.9 * avg_train_speed
+    timeLeft = (max_iters - it) / avg_train_speed # in seconds
+    total_train_loss += training_loss
+    avg_train_loss += training_loss
+    running_train_loss = total_train_loss / it
+    timeLeftMins = timeLeft / 60
+    print("iteration:                                  %d" % it)
+    print("training loss:                              %f" % training_loss)
+    print("running training loss average:              %f" % running_train_loss)
+    if it % log_every == 0:
+      avg_train_loss = avg_train_loss / log_every
+      print("average training loss (every %d):           %f" % (log_every,avg_train_loss))
+      avg_train_loss = 0
+    print("learning rate:                              %f" % lr)
+    print("speed:                                      %.2f it/s" % train_speed)
+    print("average speed:                              %.2f" % avg_train_speed)
+    print("Time left:                                  %d hr %.1f min\n" % (timeLeftMins / 60, timeLeftMins % 60))
+
+    if it % validate_every == 0:
+      validation_loss = test(model, criterion, batch_size, use_cuda, validset_dir)
+      total_valid_loss += validation_loss
+      n = it / validate_every
+      print("validation loss:                            %f" % validation_loss)
+      print("running valid loss:                         %f\n" % (total_valid_loss / n))
+    toc = tic
+    tic = time.time()
+    it += 1
+
 def parseArgs():
   parser = argparse.ArgumentParser()
-
   parser.add_argument("--batch_size", type=int, default=64, help="size of batch from training data")
   parser.add_argument("--max_iters", type=int, default=80000, help="max iterations")
   parser.add_argument("--trainset_dir", type=str, default=None, help="Directory for training data")
@@ -20,89 +93,42 @@ def parseArgs():
   parser.add_argument("--output_dir", type=str, default=None, help="directory to output testing results")
   parser.add_argument("--use_cuda", type=bool, default=False, help="does this machine support cuda?")
   parser.add_argument("--average_loss_every", type=int, default=20, help="average the loss every x iterations")
+  parser.add_argument("--validate_every", type=int, default=1000, help="run a validation batch every x iterations")
 
   return parser.parse_args()
 
 def loadModel(args):
   return DeblurNet().cuda if args.use_cuda else DeblurNet()
 
-def train(args):
-  ##############################################################
-  # define training parameters
-  max_iters = args.max_iters
-  batch_size = args.batch_size
-  use_cuda = args.use_cuda
-  decayRate = 0.5
-  decayEvery = 8000
-  decayStart = 24000
-  lrMin = 10e-6
-  lr = 0.005
-  log_every = args.average_loss_every
-  print("batch size:            %d" % batch_size)
-  print("max iterations:        %d" % max_iters)
-  print("use cuda:              %s" % use_cuda)
-  print("learning rate start:   %f" % lr)
-  print("learning rate minimum: %f\n" % lrMin)
-  ###############################################################
-  # set up the model and the optimizer
-  print("Loading Model...\n")
-  deblurNet = loadModel(args)
-  optimizer = torch.optim.Adam(deblurNet.parameters(),lr=lr)
-  criterion = torch.nn.MSELoss()
-  trainDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),args.trainset_dir)
+def train(model, criterion, optimizer, batch_size, use_cuda, trainset_dir):
+  trainDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), trainset_dir)
   trainDirs, trainNames = scanSetFolder(trainDir)
-  it = 0
-  tic = time.time()
-  avgSpeed = None
-  print("Begin Training...\n")
-  total_loss = 0
-  avg_loss = 0
-  while it < max_iters:
-    # check to see if the learning rate needs to be updated
-    if it >= decayStart and ((it - decayStart) % decayEvery == 0):
-      lr = lr * decayRate
-      if lr < lrMin:
-        lr = lrMin
-      for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-    batchFrames = loadRandomBatch(trainDirs, 5)
-    frameLoader = torch.utils.data.DataLoader(batchFrames, batch_size=batch_size)
-    deblurNet.train()
-    trainPacket, gtImg = next(iter(frameLoader))
+  batchFrames = loadRandomBatch(trainDirs, 5)
+  frameLoader = torch.utils.data.DataLoader(batchFrames, batch_size=batch_size)
+  model.train()
+  trainPacket, gtImg = next(iter(frameLoader))
+  if use_cuda:
+    trainPacket, gtImg = trainPacket.cuda(), gtImg.cuda()
+  optimizer.zero_grad()
+  output = model(trainPacket)
+  loss = criterion(output, gtImg)
+  loss.backward()
+  optimizer.step()
+  return loss
+
+def test(model, criterion, batch_size, use_cuda, testset_dir):
+  testDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), testset_dir)
+  testDirs, testNames = scanSetFolder(testDir)
+  batchFrames = loadRandomBatch(testDirs, 5)
+  frameLoader = torch.utils.data.DataLoader(batchFrames, batch_size=batch_size)
+  model.eval()
+  with torch.no_grad():
+    testPacket, gtImg = next(iter(frameLoader))
     if use_cuda:
-      trainPacket, gtImg = trainPacket.cuda(), gtImg.cuda()
-    optimizer.zero_grad()
-    output = deblurNet(trainPacket)
+      testPacket, gtImg = testPacket.cuda(), gtImg.cuda()
+    output = model(testPacket)
     loss = criterion(output, gtImg)
-    loss.backward()
-    optimizer.step()
-    # data collection
-    total_loss += loss
-    avg_loss += loss
-    # for idx, (trainPacket, gtImg) in enumerate(frameLoader):
-    ####### training for that directory should be finished
-    #######################################################
-    it += 1
-    toc = time.time()
-    speed = 1/(toc-tic) # iterations per second
-    avgSpeed = avgSpeed or speed
-    avgSpeed = 0.1 * speed + 0.9 * avgSpeed
-    timeLeft = (max_iters - it) / avgSpeed # in seconds
-    running_loss = total_loss / it
-    toc = tic
-    tic = time.time()
-    timeLeftMins = timeLeft / 60
-    print("iteration:            %d" % it)
-    print("loss:                 %f" % loss)
-    print("running loss average: %f" % running_loss)
-    if avg_loss % log_every == 0:
-      avg_loss = avg_loss / log_every
-      print("average loss:         %f" % avg_loss)
-      avg_loss = 0
-    print("learning rate:        %f" % lr)
-    print("speed:                %.2f it/s" % speed)
-    print("average speed:        %.2f" % avgSpeed)
-    print("Time left:            %d hr %.1f min\n" % (timeLeftMins / 60, timeLeftMins % 60))
+    return loss
 
 def loadRandomBatch(dirs, packet_size):
   transform = transforms.Compose([transforms.ToTensor()])
@@ -122,5 +148,4 @@ def scanSetFolder(folder):
   return dirs, names
 
 if __name__ == "__main__":
-  args = parseArgs()
-  train(args)
+  main()
