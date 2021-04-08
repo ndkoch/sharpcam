@@ -1,4 +1,5 @@
 import os
+import random
 from torch.utils.data import Dataset
 import numpy as np
 import cv2 as cv
@@ -13,15 +14,18 @@ class FramePacket(Dataset):
     self.packet_len = packet_len
 
   def __len__(self):
-    return len(self.total_train_imgs) - self.packet_len + 1
+    return len(self.total_train_imgs)
 
   def __getitem__(self, idx):
+    gt_img_info = (self.total_gt_imgs[idx])[:-4].split("_")
+    img_number = int(gt_img_info[0])
+    patch_number = gt_img_info[2]
     gt_loc = os.path.join(self.gt_dir, self.total_gt_imgs[idx])
     gt_tensor = self.transform(cv.cvtColor(cv.imread(gt_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB))
     train_packet = None
     firstImg = True
-    for i in range(idx, idx + self.packet_len):
-      train_loc = os.path.join(self.train_dir, self.total_train_imgs[i])
+    for i in range(4, -1, -1):
+      train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number - i, patch_number))
       train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
       if firstImg:
         train_packet = train_image
@@ -30,4 +34,12 @@ class FramePacket(Dataset):
         train_packet = np.concatenate((train_packet,train_image),axis=2)
     train_tensor = self.transform(train_packet)
     return train_tensor, gt_tensor
+
+  def construct_img_name(self, img_num, patch_number):
+    # if we are one of the first four preceding frames
+    # just repeat the first frame in place of the missing frame
+    img_num = img_num if img_num >= 0 else 0
+    a = str(img_num)
+    c = a.rjust(5, "0")
+    return "%s_patch_%s.jpg" % (c,patch_number)
 
