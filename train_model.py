@@ -63,29 +63,23 @@ def train(args):
       lr = lr * decayRate
       if lr < lrMin:
         lr = lrMin
-      # now update optimizer
       for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-    ################################################
-    ## Choose Directory and then train on all frames
     batchFrames = loadRandomBatch(trainDirs, 5)
     frameLoader = torch.utils.data.DataLoader(batchFrames, batch_size=batch_size)
     deblurNet.train()
-    j = 0
-    for idx, (trainPacket, gtImg) in enumerate(frameLoader):
-      if use_cuda:
-        trainPacket, gtImg = trainPacket.cuda(), gtImg.cuda()
-      optimizer.zero_grad()
-      output = deblurNet(trainPacket)
-      loss = criterion(output, gtImg)
-      loss.backward()
-      optimizer.step()
-      # data collection
-      total_loss += loss
-      avg_loss += loss
-      if j > 9:
-        break
-      j += 1
+    trainPacket, gtImg = next(iter(frameLoader))
+    if use_cuda:
+      trainPacket, gtImg = trainPacket.cuda(), gtImg.cuda()
+    optimizer.zero_grad()
+    output = deblurNet(trainPacket)
+    loss = criterion(output, gtImg)
+    loss.backward()
+    optimizer.step()
+    # data collection
+    total_loss += loss
+    avg_loss += loss
+    # for idx, (trainPacket, gtImg) in enumerate(frameLoader):
     ####### training for that directory should be finished
     #######################################################
     it += 1
@@ -108,7 +102,7 @@ def train(args):
     print("learning rate:        %f" % lr)
     print("speed:                %.2f it/s" % speed)
     print("average speed:        %.2f" % avgSpeed)
-    print("Time left:            %d hr %.1f min" % (timeLeftMins / 60, timeLeftMins % 60))
+    print("Time left:            %d hr %.1f min\n" % (timeLeftMins / 60, timeLeftMins % 60))
 
 def loadRandomBatch(dirs, packet_size):
   transform = transforms.Compose([transforms.ToTensor()])
