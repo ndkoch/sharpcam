@@ -22,7 +22,7 @@ def scanSetFolder(folder):
 
 def crop(path, input, height, width, imgName, patchName):
   k = 0
-  newDir = os.path.join(directory, patchName)
+  newDir = os.path.join(path, patchName)
   if not os.path.exists(newDir):
     os.makedirs(newDir)
   try:
