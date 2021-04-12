@@ -26,6 +26,11 @@ def main():
   validset_dir = args.validset_dir
   output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.output_dir)
   validate_every = args.validate_every
+  loss_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.losses_dir)
+  if not os.path.exists(loss_dir):
+    os.makedirs(loss_dir)
+  losses_file = open(os.path.join(loss_dir,"losses.txt"), 'w+')
+  losses_file.truncate(0)
   print("batch size:            %d" % batch_size)
   print("max iterations:        %d" % max_iters)
   print("use cuda:              %s" % use_cuda)
@@ -61,6 +66,7 @@ def main():
     avg_train_loss += training_loss
     running_train_loss = total_train_loss / it
     timeLeftMins = timeLeft / 60
+    losses_file.write("%f" % training_loss)
     print("iteration:                                  %d" % it)
     print("training loss:                              %f" % training_loss)
     print("running training loss average:              %f" % running_train_loss)
@@ -86,6 +92,7 @@ def main():
     os.makedirs(output_dir)
   output_dir = os.path.join(output_dir, "deblurnet_state_dict.pt")
   torch.save(model.state_dict(),output_dir)
+  losses_file.close()
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -98,6 +105,7 @@ def parseArgs():
   parser.add_argument("--use_cuda", type=bool, default=False, help="does this machine support cuda?")
   parser.add_argument("--average_loss_every", type=int, default=20, help="average the loss every x iterations")
   parser.add_argument("--validate_every", type=int, default=1000, help="run a validation batch every x iterations")
+  parser.add_argument("--losses_dir", type=str, default="lossses/", help="directory for saving loss values")
 
   return parser.parse_args()
 
