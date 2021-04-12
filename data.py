@@ -26,7 +26,11 @@ class FramePacket(Dataset):
     firstImg = True
     for i in range(4, -1, -1):
       train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number - i, patch_number))
-      train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+      try:
+        train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+      except:
+        train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number, patch_number))
+        train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
       if firstImg:
         train_packet = train_image
         firstImg = False
