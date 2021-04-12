@@ -1,6 +1,19 @@
 import os
 from PIL import Image
 
+def crop_directory(dirs):
+  for directory in dirs:
+    a = os.path.join(directory,"input")
+    b = os.path.join(directory,"GT")
+    inputImgs = os.listdir(a)
+    gtImgs = os.listdir(b)
+    for img in inputImgs:
+      path = os.path.join(a,img)
+      crop(directory,path,128,128, img, "input_patches")
+    for img in gtImgs:
+      path = os.path.join(b,img)
+      crop(directory,path,128,128, img, "GT_patches")
+
 def scanSetFolder(folder):
   names = os.listdir(folder)
   names.sort()
@@ -33,14 +46,10 @@ if __name__ == "__main__":
   testDirs, testNames = scanSetFolder(testDir)
   validDirs, validNames = scanSetFolder(validDir)
 
-  for directory in trainDirs:
-    a = os.path.join(directory,"input")
-    b = os.path.join(directory,"GT")
-    inputImgs = os.listdir(a)
-    gtImgs = os.listdir(b)
-    for img in inputImgs:
-      path = os.path.join(a,img)
-      crop(directory,path,128,128, img, "input_patches")
-    for img in gtImgs:
-      path = os.path.join(b,img)
-      crop(directory,path,128,128, img, "GT_patches")
+  print("croopping training data...")
+  crop_directory(trainDirs)
+  print("croopping testing data...")
+  crop_directory(testDirs)
+  print("croopping validation data...")
+  crop_directory(validDirs)
+  print("done!")
