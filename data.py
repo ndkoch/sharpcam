@@ -4,6 +4,40 @@ from torch.utils.data import Dataset
 import numpy as np
 import cv2 as cv
 
+class FramePacketPrediction(Dataset):
+  def __init__(self, path, transform, packet_len):
+    self.path = path
+    self.transform = transform
+    self.total_frames = os.listdir(path)
+    self.packet_len = packet_len
+
+  def __len__(self):
+    return len(self.total_frames)
+
+  def __getitem__(self, idx):
+    img_num = int((self.total_frames[idx])[:-4])
+    firstImg = True
+    for i in range(4, -1, -1):
+      img_loc = os.path.join(self.path, self.construct_img_name(img_num - i))
+      try:
+        image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+      except:
+        img_loc = os.path.join(self.train_dir, self.construct_img_name(img_num))
+        image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+      if firstImg:
+        packet = image
+        firstImg = False
+      else:
+        packet = np.concatenate((packet,image),axis=2)
+    tensor = self.transform(packet)
+    return tensor
+
+  def construct_img_name(self, img_num):
+    img_num = img_num if img_num >= 0 else 0
+    a = str(img_num)
+    c = a.rjust(5, "0")
+    return "%s.jpg" % c
+
 class FramePacket(Dataset):
   def __init__(self, train_dir, gt_dir, transform, packet_len):
     self.train_dir = train_dir
@@ -46,4 +80,4 @@ class FramePacket(Dataset):
     a = str(img_num)
     c = a.rjust(5, "0")
     return "%s_patch_%s.jpg" % (c,patch_number)
-
+  
