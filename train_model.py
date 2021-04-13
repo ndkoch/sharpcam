@@ -66,7 +66,7 @@ def main():
     avg_train_loss += training_loss
     running_train_loss = total_train_loss / it
     timeLeftMins = timeLeft / 60
-    losses_file.write("%f" % training_loss)
+    losses_file.write("%f\n" % training_loss)
     print("iteration:                                  %d" % it)
     print("training loss:                              %f" % training_loss)
     print("running training loss average:              %f" % running_train_loss)

@@ -5,6 +5,8 @@ from torchvision import transforms
 import argparse
 import random
 import os
+from PIL import Image
+import numpy as np
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -45,9 +47,19 @@ def main():
   frame = next(iter(frameLoader))
   if args.use_cuda:
       frame = frame.cuda()
-  # print(frame.shape)
+  x = frame.cpu().detach().numpy()
+  x = x[0]
+  x = x[0:3]
+  print(x.shape)
   y = model(frame)
-  print(y.shape)
+  y = y.cpu().detach().numpy()
+  y = y[0]
+  y = np.ascontiguousarray(y.transpose(1,2,0))
+  x = np.ascontiguousarray(x.transpose(1,2,0))
+  img = Image.fromarray(y, 'RGB')
+  imgx = Image.fromarray(x, 'RGB')
+  img.save('t1.png')
+  imgx.save('f1.png')
 
 if __name__ == "__main__":
   main()
