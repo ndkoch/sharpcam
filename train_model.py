@@ -110,7 +110,7 @@ def parseArgs():
   return parser.parse_args()
 
 def loadModel(args):
-  return DeblurNet().cuda if args.use_cuda else DeblurNet()
+  return DeblurNet().cuda() if args.use_cuda else DeblurNet()
 
 def train(model, criterion, optimizer, batch_size, use_cuda, trainset_dir):
   trainDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), trainset_dir)
