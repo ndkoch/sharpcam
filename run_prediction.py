@@ -43,6 +43,8 @@ def main():
   frameLoader = torch.utils.data.DataLoader(video, batch_size=1)
   model = loadModel(args)
   frame = next(iter(frameLoader))
+  if args.use_cuda:
+      frame = frame.cuda()
   # print(frame.shape)
   y = model(frame)
   print(y.shape)
