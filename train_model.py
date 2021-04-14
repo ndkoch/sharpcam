@@ -30,7 +30,9 @@ def main():
   if not os.path.exists(loss_dir):
     os.makedirs(loss_dir)
   losses_file = open(os.path.join(loss_dir,"losses.txt"), 'w+')
+  valid_losses_file = open(os.path.join(loss_dir,"validation_losses.txt"), 'w+')
   losses_file.truncate(0)
+  valid_losses_file.truncate(0)
   print("batch size:            %d" % batch_size)
   print("max iterations:        %d" % max_iters)
   print("use cuda:              %s" % use_cuda)
@@ -81,6 +83,7 @@ def main():
 
     if it % validate_every == 0:
       validation_loss = test(model, criterion, batch_size, use_cuda, validset_dir)
+      valid_losses_file.write("%f\n" % validation_loss)
       total_valid_loss += validation_loss
       n = it / validate_every
       print("validation loss:                            %f" % validation_loss)
@@ -90,9 +93,10 @@ def main():
     it += 1
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
-  output_dir = os.path.join(output_dir, "deblurnet_state_dict.pt")
+  output_dir = os.path.join(output_dir, "%s.pt" % args.model_save_name)
   torch.save(model.state_dict(),output_dir)
   losses_file.close()
+  valid_losses_file.close()
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -106,6 +110,7 @@ def parseArgs():
   parser.add_argument("--average_loss_every", type=int, default=20, help="average the loss every x iterations")
   parser.add_argument("--validate_every", type=int, default=1000, help="run a validation batch every x iterations")
   parser.add_argument("--losses_dir", type=str, default="lossses/", help="directory for saving loss values")
+  parser.add_argument("--model_save_name", type=str, default="deblurnet_state_dict", help="name for model state dict")
 
   return parser.parse_args()
 
