@@ -41,7 +41,7 @@ def main():
 
   optimizer = torch.optim.Adam(model.parameters(),lr=lr)
   criterion = torch.nn.MSELoss()
-  it = 1
+  it = args.iteration
   avg_train_speed = None
   total_train_loss = 0
   total_valid_loss = 0
@@ -110,8 +110,9 @@ def parseArgs():
   parser.add_argument("--average_loss_every", type=int, default=20, help="average the loss every x iterations")
   parser.add_argument("--validate_every", type=int, default=1000, help="run a validation batch every x iterations")
   parser.add_argument("--losses_dir", type=str, default="losses/", help="directory for saving loss values")
-  parser.add_argument("--model_save_name", type=str, default="deblurnet_state_dict", help="name for model state dict")
+  parser.add_argument("--model_save_name", type=str, default="deblurnet_state_dict", help="name for model state dictbrew install coreutils")
   parser.add_argument("--model_load_dir", type=str, default=None, help="directory to load model weights from")
+  parser.add_argument("--iteration", type=int, default=1, help="iteration number, default is 0")
 
   return parser.parse_args()
 
