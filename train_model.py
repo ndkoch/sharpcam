@@ -109,13 +109,21 @@ def parseArgs():
   parser.add_argument("--use_cuda", type=bool, default=False, help="does this machine support cuda?")
   parser.add_argument("--average_loss_every", type=int, default=20, help="average the loss every x iterations")
   parser.add_argument("--validate_every", type=int, default=1000, help="run a validation batch every x iterations")
-  parser.add_argument("--losses_dir", type=str, default="lossses/", help="directory for saving loss values")
+  parser.add_argument("--losses_dir", type=str, default="losses/", help="directory for saving loss values")
   parser.add_argument("--model_save_name", type=str, default="deblurnet_state_dict", help="name for model state dict")
+  parser.add_argument("--model_load_dir", type=str, default=None, help="directory to load model weights from")
 
   return parser.parse_args()
 
 def loadModel(args):
-  return DeblurNet().cuda() if args.use_cuda else DeblurNet()
+  model = DeblurNet().cuda() if args.use_cuda else DeblurNet()
+  if args.model_load_dir != None:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.model_load_dir)
+    if args.use_cuda:
+      model.load_state_dict(torch.load(path))
+    else:
+      model.load_state_dict(torch.load(path, map_location='cpu'))
+  return model
 
 def train(model, criterion, optimizer, batch_size, use_cuda, trainset_dir):
   trainDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), trainset_dir)

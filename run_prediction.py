@@ -7,6 +7,7 @@ import random
 import os
 from PIL import Image
 import numpy as np
+import matplotlib.pyplot as plt
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -26,7 +27,7 @@ def loadModel(args):
   return model
 
 def loadRandomVideo(dirs, packet_size):
-  transform = transforms.Compose([transforms.ToTensor()])
+  transform = transforms.ToTensor()
   randDir = random.choice(dirs)
   randDir = os.path.join(randDir,"input")
   video = FramePacketPrediction(randDir, transform, packet_size)
@@ -46,20 +47,17 @@ def main():
   model = loadModel(args)
   frame = next(iter(frameLoader))
   if args.use_cuda:
-      frame = frame.cuda()
-  x = frame.cpu().detach().numpy()
+    frame = frame.cuda()
+  x = frame[0]
+  x = torch.split(x, split_size_or_sections=3, dim=0)
   x = x[0]
-  x = x[0:3]
-  print(x.shape)
+  a = transforms.ToPILImage()
+  x = a(x)
+  x.save('before.png')
   y = model(frame)
-  y = y.cpu().detach().numpy()
-  y = y[0]
-  y = np.ascontiguousarray(y.transpose(1,2,0))
-  x = np.ascontiguousarray(x.transpose(1,2,0))
-  img = Image.fromarray(y, 'RGB')
-  imgx = Image.fromarray(x, 'RGB')
-  img.save('t1.png')
-  imgx.save('f1.png')
+  y = a(y)
+  y.save('after.png')
+
 
 if __name__ == "__main__":
   main()
