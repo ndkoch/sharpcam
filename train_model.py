@@ -17,10 +17,12 @@ def main():
   batch_size = args.batch_size
   use_cuda = args.use_cuda
   decayRate = 0.5
+  it = args.iteration
   decayEvery = max_iters / 10
   decayStart = decayEvery * 3
   lrMin = 10e-6
-  lr = 0.005
+  lr = 0.005 if it == 1 else 0.005 * (2**(-(it - decayStart)//decayEvery))
+  lr = lr if lr >= lrMin else lrMin
   log_every = args.average_loss_every
   trainset_dir = args.trainset_dir
   validset_dir = args.validset_dir
@@ -41,7 +43,6 @@ def main():
 
   optimizer = torch.optim.Adam(model.parameters(),lr=lr)
   criterion = torch.nn.MSELoss()
-  it = args.iteration
   avg_train_speed = None
   total_train_loss = 0
   total_valid_loss = 0
