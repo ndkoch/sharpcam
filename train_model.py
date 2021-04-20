@@ -18,12 +18,13 @@ def main():
   use_cuda = args.use_cuda
   decayRate = 0.5
   it = args.iteration
-  decayEvery = max_iters / 10
+  decayEvery = max_iters / 15 # changed from 10 to 15 so that the lr min will actually be reached
   decayStart = decayEvery * 3
   lrMin = 10e-6
   lr = 0.005 if it == 1 else 0.005 * (2**(-(it - decayStart)//decayEvery))
   lr = lr if lr >= lrMin else lrMin
   log_every = args.average_loss_every
+  save_every = args.save_every
   trainset_dir = args.trainset_dir
   validset_dir = args.validset_dir
   output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.output_dir)
@@ -81,7 +82,8 @@ def main():
     print("speed:                                      %.2f it/s" % train_speed)
     print("average speed:                              %.2f" % avg_train_speed)
     print("Time left:                                  %d hr %.1f min\n" % (timeLeftMins / 60, timeLeftMins % 60))
-
+    if it % save_every == 0:
+      saveModel(model,output_dir,"deblurnet_state_dict_it_%d" % it)
     if it % validate_every == 0:
       validation_loss = test(model, criterion, batch_size, use_cuda, validset_dir)
       valid_losses_file.write("%f\n" % validation_loss)
@@ -92,12 +94,15 @@ def main():
     toc = tic
     tic = time.time()
     it += 1
-  if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-  output_dir = os.path.join(output_dir, "%s.pt" % args.model_save_name)
-  torch.save(model.state_dict(),output_dir)
+  saveModel(model,output_dir,args.model_save_name)
   losses_file.close()
   valid_losses_file.close()
+
+def saveModel(model, output_dir, model_save_name):
+  if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+  output_dir = os.path.join(output_dir, "%s.pt" % model_save_name)
+  torch.save(model.state_dict(),output_dir)
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -114,6 +119,7 @@ def parseArgs():
   parser.add_argument("--model_save_name", type=str, default="deblurnet_state_dict", help="name for model state dictbrew install coreutils")
   parser.add_argument("--model_load_dir", type=str, default=None, help="directory to load model weights from")
   parser.add_argument("--iteration", type=int, default=1, help="iteration number, default is 0")
+  parser.add_argument("--save_every", type=int, default=50000, help="save the model state dict every x iterations")
 
   return parser.parse_args()
 
