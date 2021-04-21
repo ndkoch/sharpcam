@@ -14,6 +14,7 @@ def parseArgs():
   parser.add_argument("--use_cuda", type=bool, default=False, help="does this machine support cuda?")
   parser.add_argument("--video_directory", type=str, default=None, help="directry for video")
   parser.add_argument("--model_weights", type=str,default=None, help="directory path for model weights (.pt file)")
+  parser.add_argument("--patchify", type=bool, default=False, help="Break the input image into patches of 128x128 and then repatch the final image")
   return parser.parse_args()
 
 def loadModel(args):
@@ -48,16 +49,37 @@ def main():
   frame = next(iter(frameLoader))
   if args.use_cuda:
     frame = frame.cuda()
-  x = frame[0]
-  x = torch.split(x, split_size_or_sections=3, dim=0)
-  x = x[0]
-  a = transforms.ToPILImage()
-  x = a(x)
-  x.save('before.png')
-  y = model(frame)
-  y = a(y)
-  y.save('after.png')
-
+  if args.patchify:
+    n = 128
+    height = frame.size()[2]
+    width = frame.size()[3]
+    y = torch.zeros((1,3,height,width))
+    for i in range(0,height,n):
+      for j in range(0,width,n):
+        i_end = min(i+n,height)
+        j_end = min(j+n,width)
+        patch = frame[:,:,i:i_end,j:j_end]
+        y[:,:,i:i_end,j:j_end] = model(patch) # patch[:,0:3,:,:,]
+    x = frame[0]
+    x = torch.split(x, split_size_or_sections=3, dim=0)
+    x = x[0]
+    a = transforms.ToPILImage()
+    x = a(x)
+    x.save('before.png')
+    y = y[0]
+    y = a(y)
+    y.save('after.png')
+  else:
+    x = frame[0]
+    x = torch.split(x, split_size_or_sections=3, dim=0)
+    x = x[0]
+    a = transforms.ToPILImage()
+    x = a(x)
+    x.save('before.png')
+    y = model(frame)
+    y = y[0]
+    y = a(y)
+    y.save('after.png')
 
 if __name__ == "__main__":
   main()
