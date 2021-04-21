@@ -34,6 +34,7 @@ def parseArgs():
   parser.add_argument("--use_cuda", type=bool, default=False, help="does this machine support cuda?")
   parser.add_argument("--losses_dir", type=str, default="losses/", help="directory for saving loss values")
   parser.add_argument("--num_passes", type=int, default=500, help="number of validation data points")
+  parser.add_argument("--model_load_dir", type=str, default=None, help="directory to load model weights from")
 
   return parser.parse_args()
 
