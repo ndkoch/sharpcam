@@ -1,5 +1,5 @@
 import torch
-from model.deblurnet import DeblurNet
+from model.deblurnet import DeblurNet, IdentityNet
 from data import FramePacketPrediction
 from torchvision import transforms
 import argparse
@@ -8,6 +8,8 @@ import os
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2 as cv
+from torchvision.utils import save_image
 
 def parseArgs():
   parser = argparse.ArgumentParser()
@@ -59,7 +61,7 @@ def main():
         i_end = min(i+n,height)
         j_end = min(j+n,width)
         patch = frame[:,:,i:i_end,j:j_end]
-        y[:,:,i:i_end,j:j_end] = model(patch) # patch[:,0:3,:,:,]
+        y[:,:,i:i_end,j:j_end] = model(patch)
     x = frame[0]
     x = torch.split(x, split_size_or_sections=3, dim=0)
     x = x[0]
@@ -70,16 +72,27 @@ def main():
     y = a(y)
     y.save('after.png')
   else:
-    x = frame[0]
-    x = torch.split(x, split_size_or_sections=3, dim=0)
-    x = x[0]
-    a = transforms.ToPILImage()
-    x = a(x)
-    x.save('before.png')
+    # x = frame[0]
+    # x = torch.split(x, split_size_or_sections=3, dim=0)
+    # x = x[0]
+    # a = transforms.ToPILImage()
+    # x = a(x)
+    # x.save('before.png')
+    frame = cv.cvtColor(cv.imread("/home/nkoch/Documents/18500/sharpcam/before.png", cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    print(frame.shape)
+    packet = np.zeros((720,1280,3))
+    for i in range(0,5):
+      packet = np.concatenate((packet,frame),axis=2)
+    packet = packet[:,:,3:]
+    a = transforms.ToTensor()
+    frame = a(packet)
+    print(frame.size())
+    frame = torch.unsqueeze(frame,0)
+    print(frame.size())
     y = model(frame)
+    # print(model.layer1.weight.size())
     y = y[0]
-    y = a(y)
-    y.save('after.png')
+    save_image(y,'test.png')
 
 if __name__ == "__main__":
   main()
