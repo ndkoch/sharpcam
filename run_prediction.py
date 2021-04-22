@@ -1,5 +1,5 @@
 import torch
-from model.deblurnet import DeblurNet, IdentityNet
+from model.deblurnet import DeblurNet
 from data import FramePacket
 from torchvision import transforms
 import argparse
@@ -53,6 +53,7 @@ def main():
   frame, gt = next(iter(frameLoader))
   if args.use_cuda:
     frame = frame.cuda()
+    gt = gt.cuda()
   if args.patchify:
     n = 128
     height = frame.size()[2]
