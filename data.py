@@ -11,7 +11,6 @@ class FramePacketPrediction(Dataset):
     self.transform = transform
     self.total_frames = os.listdir(path)
     self.packet_len = packet_len
-    self.max_intensity = 255
 
   def __len__(self):
     return len(self.total_frames)
@@ -31,7 +30,6 @@ class FramePacketPrediction(Dataset):
         firstImg = False
       else:
         packet = np.concatenate((packet,image),axis=2)
-    packet = packet.astype(np.float32) / self.max_intensity
     tensor = self.transform(packet)
     return tensor
 
@@ -49,7 +47,6 @@ class FramePacket(Dataset):
     self.total_train_imgs = os.listdir(train_dir)
     self.total_gt_imgs = os.listdir(gt_dir)
     self.packet_len = packet_len
-    self.max_intensity = 255
 
   def __len__(self):
     return len(self.total_train_imgs)
@@ -60,7 +57,6 @@ class FramePacket(Dataset):
     patch_number = gt_img_info[2]
     gt_loc = os.path.join(self.gt_dir, self.total_gt_imgs[idx])
     gt_tensor = cv.cvtColor(cv.imread(gt_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-    gt_tensor = gt_tensor.astype(np.float32) / self.max_intensity
     gt_tensor = self.transform(gt_tensor)
     train_packet = None
     firstImg = True
@@ -76,7 +72,6 @@ class FramePacket(Dataset):
         firstImg = False
       else:
         train_packet = np.concatenate((train_packet,train_image),axis=2)
-    train_packet = train_packet.astype(np.float32) / self.max_intensity
     train_tensor = self.transform(train_packet)
     return train_tensor, gt_tensor
 

@@ -18,8 +18,8 @@ def main():
   use_cuda = args.use_cuda
   decayRate = 0.5
   it = args.iteration
-  decayEvery = max_iters / 15 # changed from 10 to 15 so that the lr min will actually be reached
-  decayStart = decayEvery * 3
+  decayEvery = 8000
+  decayStart = 24000
   lrMin = 10e-6
   lr = 0.005 if it == 1 else 0.005 * (2**(-(it - decayStart)//decayEvery))
   lr = lr if lr >= lrMin else lrMin
@@ -42,7 +42,7 @@ def main():
   print("learning rate start:   %f" % lr)
   print("learning rate minimum: %f\n" % lrMin)
 
-  optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+  optimizer = torch.optim.Adam(model.parameters(), lr=lr)
   criterion = torch.nn.MSELoss()
   avg_train_speed = None
   total_train_loss = 0
