@@ -48,6 +48,7 @@ def main():
   videos = scanSetFolder(os.path.join(os.path.dirname(os.path.abspath(__file__)), args.video_directory))
   video = loadRandomVideo(videos, 5)
   frameLoader = torch.utils.data.DataLoader(video, batch_size=1)
+  criterion = torch.nn.MSELoss()
   model = loadModel(args)
   frame, gt = next(iter(frameLoader))
   if args.use_cuda:
@@ -84,6 +85,8 @@ def main():
     y = model(frame)
     y = y[0]
     save_image(y, 'test-img-loader/model-result.png')
+    loss = criterion(y, gt)
+    print(loss)
 
 if __name__ == "__main__":
   main()
