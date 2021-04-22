@@ -1,6 +1,6 @@
 import torch
 from model.deblurnet import DeblurNet, IdentityNet
-from data import FramePacketPrediction
+from data import FramePacket
 from torchvision import transforms
 import argparse
 import random
@@ -32,8 +32,9 @@ def loadModel(args):
 def loadRandomVideo(dirs, packet_size):
   transform = transforms.ToTensor()
   randDir = random.choice(dirs)
-  randDir = os.path.join(randDir,"input")
-  video = FramePacketPrediction(randDir, transform, packet_size)
+  train_dir = os.path.join(randDir,"input_patches")
+  gt_dir = os.path.join(randDir,"GT_patches")
+  video = FramePacket(train_dir, gt_dir, transform, packet_size)
   return video
 
 def scanSetFolder(folder):
@@ -48,7 +49,7 @@ def main():
   video = loadRandomVideo(videos, 5)
   frameLoader = torch.utils.data.DataLoader(video, batch_size=1)
   model = loadModel(args)
-  frame = next(iter(frameLoader))
+  frame, gt = next(iter(frameLoader))
   if args.use_cuda:
     frame = frame.cuda()
   if args.patchify:
@@ -72,27 +73,17 @@ def main():
     y = a(y)
     y.save('after.png')
   else:
-    # x = frame[0]
-    # x = torch.split(x, split_size_or_sections=3, dim=0)
-    # x = x[0]
-    # a = transforms.ToPILImage()
-    # x = a(x)
-    # x.save('before.png')
-    frame = cv.cvtColor(cv.imread("/home/nkoch/Documents/18500/sharpcam/before.png", cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-    print(frame.shape)
-    packet = np.zeros((720,1280,3))
-    for i in range(0,5):
-      packet = np.concatenate((packet,frame),axis=2)
-    packet = packet[:,:,3:]
-    a = transforms.ToTensor()
-    frame = a(packet)
-    print(frame.size())
-    frame = torch.unsqueeze(frame,0)
-    print(frame.size())
+    x = frame[0]
+    x = torch.split(x, split_size_or_sections=3, dim=0)
+    i = 0
+    for img in x:
+      save_image(img,'test-img-loader/input_f_%d.png' % i)
+      i += 1
+    gt = gt[0]
+    save_image(gt,'test-img-loader/gt.png')
     y = model(frame)
-    # print(model.layer1.weight.size())
     y = y[0]
-    save_image(y,'test.png')
+    save_image(y, 'test-img-loader/model-result.png')
 
 if __name__ == "__main__":
   main()
