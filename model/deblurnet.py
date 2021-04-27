@@ -5,7 +5,8 @@ from torch.nn import ReLU, Conv2d, ConvTranspose2d, BatchNorm2d, Module, Sigmoid
 class DeblurNet(Module):
   def __init__(self):
     super(DeblurNet, self).__init__()
-    self.F0  = Conv2d(15,64,5,1,2)
+    # self.F0  = Conv2d(15,64,5,1,2)
+    self.F0  = Conv2d(3,64,5,1,2)
     self.D1  = Conv2d(64,64,3,2,1)
     self.F1  = Conv2d(64,128,3,1,1)
     self.F2  = Conv2d(128,128,3,1,1)
@@ -25,8 +26,9 @@ class DeblurNet(Module):
     self.F12 = Conv2d(128,128,3,1,1)
     self.F13 = Conv2d(128,64,3,1,1)
     self.U3  = ConvTranspose2d(64,64,4,2,1)
-    self.F14 = Conv2d(64,15,3,1,1)
-    self.F15 = Conv2d(15,3,3,1,1)
+    # self.F14 = Conv2d(64,15,3,1,1)
+    self.F14 = Conv2d(64,3,3,1,1)
+    # self.F15 = Conv2d(15,3,3,1,1)
     self.batchnorm3 = BatchNorm2d(3,1e-3)
     self.batchnorm15 = BatchNorm2d(15,1e-3)
     self.batchnorm64 = BatchNorm2d(64,1e-3)
@@ -41,7 +43,8 @@ class DeblurNet(Module):
     # for our case the reference image will be the last image in the input
     # and the first 4 images will be the first 4 prior frames to the frame
     # we are deblurring.
-    ref = torch.narrow(x,1,12,3)
+    # ref = torch.narrow(x,1,12,3)
+    ref = x
     # F0
     F0_out = self.F0(x)
     F0_out = self.batchnorm64(F0_out)
@@ -125,14 +128,18 @@ class DeblurNet(Module):
     U3_out = self.batchnorm64(U3_out) + F0_out # Skip Connection 3
     U3_out = self.relu(U3_out)
     # F14
+    # F14_out = self.F14(U3_out)
+    # F14_out = self.batchnorm15(F14_out)
+    # F14_out = self.relu(F14_out)
     F14_out = self.F14(U3_out)
-    F14_out = self.batchnorm15(F14_out)
+    F14_out = self.batchnorm3(F14_out) + ref
     F14_out = self.relu(F14_out)
+    return F14_out
     # F15
-    F15_out = self.F15(F14_out)
-    F15_out = self.batchnorm3(F15_out) + ref # Skip Connection 4
-    F15_out = self.sigmoid(F15_out)
-    return F15_out
+    # F15_out = self.F15(F14_out)
+    # F15_out = self.batchnorm3(F15_out) + ref # Skip Connection 4
+    # F15_out = self.sigmoid(F15_out)
+    # return F15_out
 
 # if __name__ == "__main__":
 #   input_height = 720 #720
