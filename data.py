@@ -18,18 +18,25 @@ class FramePacketPrediction(Dataset):
   def __getitem__(self, idx):
     img_num = int((self.total_frames[idx])[:-4])
     firstImg = True
-    for i in range(4, -1, -1):
-      img_loc = os.path.join(self.path, self.construct_img_name(img_num - i))
-      try:
-        image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-      except:
-        img_loc = os.path.join(self.train_dir, self.construct_img_name(img_num))
-        image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-      if firstImg:
-        packet = image
-        firstImg = False
-      else:
-        packet = np.concatenate((packet,image),axis=2)
+    img_loc = os.path.join(self.path, self.construct_img_name(img_num))
+    try:
+      image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    except:
+      img_loc = os.path.join(self.train_dir, self.construct_img_name(img_num))
+      image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    packet = image
+    # for i in range(4, -1, -1):
+    #   img_loc = os.path.join(self.path, self.construct_img_name(img_num - i))
+    #   try:
+    #     image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    #   except:
+    #     img_loc = os.path.join(self.train_dir, self.construct_img_name(img_num))
+    #     image = cv.cvtColor(cv.imread(img_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    #   if firstImg:
+    #     packet = image
+    #     firstImg = False
+    #   else:
+    #     packet = np.concatenate((packet,image),axis=2)
     tensor = self.transform(packet)
     return tensor
 
@@ -60,18 +67,25 @@ class FramePacket(Dataset):
     gt_tensor = self.transform(gt_tensor)
     train_packet = None
     firstImg = True
-    for i in range(4, -1, -1):
-      train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number - i, patch_number))
-      try:
-        train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-      except:
-        train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number, patch_number))
-        train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-      if firstImg:
-        train_packet = train_image
-        firstImg = False
-      else:
-        train_packet = np.concatenate((train_packet,train_image),axis=2)
+    train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number, patch_number))
+    try:
+      train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    except:
+      train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number, patch_number))
+      train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    train_packet = train_image
+    # for i in range(4, -1, -1):
+    #   train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number - i, patch_number))
+    #   try:
+    #     train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    #   except:
+    #     train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number, patch_number))
+    #     train_image = cv.cvtColor(cv.imread(train_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
+    #   if firstImg:
+    #     train_packet = train_image
+    #     firstImg = False
+    #   else:
+    #     train_packet = np.concatenate((train_packet,train_image),axis=2)
     train_tensor = self.transform(train_packet)
     return train_tensor, gt_tensor
 
