@@ -42,7 +42,8 @@ def main():
   print("learning rate start:   %f" % lr)
   print("learning rate minimum: %f\n" % lrMin)
 
-  optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+  # optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+  optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4, nesterov=True)
   criterion = torch.nn.MSELoss()
   avg_train_speed = None
   total_train_loss = 0
