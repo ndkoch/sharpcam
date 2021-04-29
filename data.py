@@ -3,6 +3,7 @@ import random
 from torch.utils.data import Dataset
 import numpy as np
 import cv2 as cv
+import albumentations as A
 from PIL import Image
 
 class FramePacketPrediction(Dataset):
@@ -59,12 +60,14 @@ class FramePacket(Dataset):
     return len(self.total_train_imgs)
 
   def __getitem__(self, idx):
+    augment = A.augmentations.transforms.GaussNoise(p=0.3,var_limit=(0,128))
     gt_img_info = (self.total_gt_imgs[idx])[:-4].split("_")
     img_number = int(gt_img_info[0])
     patch_number = gt_img_info[2]
     gt_loc = os.path.join(self.gt_dir, self.total_gt_imgs[idx])
     gt_tensor = cv.cvtColor(cv.imread(gt_loc, cv.IMREAD_COLOR), cv.COLOR_BGR2RGB)
-    gt_tensor = self.transform(gt_tensor)
+    gt_tensor = augment(image=gt_tensor)
+    gt_tensor = self.transform(gt_tensor['image'])
     train_packet = None
     firstImg = True
     train_loc = os.path.join(self.train_dir, self.construct_img_name(img_number, patch_number))
@@ -86,7 +89,8 @@ class FramePacket(Dataset):
     #     firstImg = False
     #   else:
     #     train_packet = np.concatenate((train_packet,train_image),axis=2)
-    train_tensor = self.transform(train_packet)
+    train_packet = augment(image=train_packet)
+    train_tensor = self.transform(train_packet['image'])
     return train_tensor, gt_tensor
 
   def construct_img_name(self, img_num, patch_number):
